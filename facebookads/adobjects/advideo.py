@@ -41,7 +41,7 @@ class AdVideo(AbstractCrudObject):
     def remote_create(
         self,
         file_info,
-	    batch=None,
+        batch=None,
         failure=None,
         params=None,
         success=None,

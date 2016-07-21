@@ -122,7 +122,6 @@ class VideoUploadSession(object):
 
     def getStartRequestContext(self):
         context = VideoUploadRequestContext()
-        # self._file_stream
         context.file_size = self._file_size
         context.account_id = self._account_id
         return context
@@ -227,7 +226,7 @@ class VideoUploadTransferRequestManager(VideoUploadRequestManager):
                 self._start_offset = int(response['start_offset'])
                 self._end_offset = int(response['end_offset'])
             except FacebookRequestError as e:
-		subcode = e.api_error_subcode()
+                subcode = e.api_error_subcode()
                 body = e.body()
                 if subcode == 1363037:
                     # existing issue, try again immedidately
