@@ -40,7 +40,8 @@ class AdVideo(AbstractCrudObject):
 
     def remote_create(
         self,
-        batch=None,
+        file_info,
+	    batch=None,
         failure=None,
         params=None,
         success=None,
@@ -66,7 +67,7 @@ class AdVideo(AbstractCrudObject):
             )
         else:
             video_uploader = VideoUploader()
-            response = video_uploader.upload(self)
+            response = video_uploader.upload(self, file_info)
         self._set_data(response)
         return response
 

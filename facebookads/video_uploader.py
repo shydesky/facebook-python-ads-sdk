@@ -39,7 +39,7 @@ class VideoUploader(object):
     def __init__(self):
         self._session = None
 
-    def upload(self, video, wait_for_encoding=False):
+    def upload(self, video, file_info, wait_for_encoding=False):
         """
         Upload the given video file.
         Args:
@@ -53,7 +53,7 @@ class VideoUploader(object):
             )
 
         # Initiate an upload session
-        self._session = VideoUploadSession(video, wait_for_encoding)
+        self._session = VideoUploadSession(video, file_info, wait_for_encoding)
         result = self._session.start()
         self._session = None
         return result
@@ -61,8 +61,11 @@ class VideoUploader(object):
 
 class VideoUploadSession(object):
 
-    def __init__(self, video, wait_for_encoding=False):
+    def __init__(self, video, file_info, wait_for_encoding=False):
         self._video = video
+        self._file_stream = file_info['file_stream']
+        self._file_size =  file_info['file_size']
+        self._file_name = file_info['file_name']
         self._api = video.get_api_assured()
         if (video.Field.filepath in video):
             self._file_path = video[video.Field.filepath]
@@ -119,8 +122,8 @@ class VideoUploadSession(object):
 
     def getStartRequestContext(self):
         context = VideoUploadRequestContext()
-        if (self._file_path):
-            context.file_size = os.path.getsize(self._file_path)
+        # self._file_stream
+        context.file_size = self._file_size
         context.account_id = self._account_id
         return context
 
@@ -128,9 +131,9 @@ class VideoUploadSession(object):
         context = VideoUploadRequestContext()
         context.session_id = self._session_id
         context.start_offset = self._start_offset
+        context.file_size = self._file_size
         context.end_offset = self._end_offset
-        if (self._file_path):
-            context.file_path = self._file_path
+        context.file_stream = self._file_stream
         if (self._slideshow_spec):
             context.slideshow_spec = self._slideshow_spec
         context.account_id = self._account_id
@@ -140,9 +143,8 @@ class VideoUploadSession(object):
         context = VideoUploadRequestContext()
         context.session_id = self._session_id
         context.account_id = self._account_id
-        if (self._file_path):
-            context.file_name = ntpath.basename(self._file_path)
-        return context
+        context.file_name = self._file_name
+	return context
 
 
 class VideoUploadRequestManager(object):
@@ -197,11 +199,10 @@ class VideoUploadTransferRequestManager(VideoUploadRequestManager):
         request = VideoUploadRequest(self._api)
         self._start_offset = context.start_offset
         self._end_offset = context.end_offset
-        filepath = context.file_path
-        file_size = os.path.getsize(filepath)
+        file_size = context.file_size
         # Give a chance to retry every 10M, or at least twice
         retry = max(file_size / (1024 * 1024 * 10), 2)
-        f = open(filepath, 'rb')
+        f = context.file_stream  
         # While the there are still more chunks to send
         while self._start_offset != self._end_offset:
             # Read a chunk of file
@@ -213,7 +214,7 @@ class VideoUploadTransferRequestManager(VideoUploadRequestManager):
             request.setParams(
                 self.getParamsFromContext(context),
                 {'video_file_chunk': (
-                    context.file_path,
+                    'x.mp4', # to do
                     chunk,
                     'multipart/form-data',
                 )},
@@ -226,7 +227,7 @@ class VideoUploadTransferRequestManager(VideoUploadRequestManager):
                 self._start_offset = int(response['start_offset'])
                 self._end_offset = int(response['end_offset'])
             except FacebookRequestError as e:
-                subcode = e.api_error_subcode()
+		subcode = e.api_error_subcode()
                 body = e.body()
                 if subcode == 1363037:
                     # existing issue, try again immedidately
@@ -405,3 +406,4 @@ class VideoEncodingStatusChecker(object):
             params={'fields': 'status'},
         ).json()
         return result['status']
+
