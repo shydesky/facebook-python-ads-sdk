@@ -38,9 +38,22 @@ class AdVideo(AbstractCrudObject):
         id = 'id'
         slideshow_spec = 'slideshow_spec'
 
+    def __init__(self, file_info, fbid=None, parent_id=None, api=None):
+        """Initializes a AdVideo object.
+        Args:
+            file_info(require):The file information of the video file
+            fbid (optional): The id of the object ont the Graph.
+            parent_id (optional): The id of the object's parent.
+            api (optional): An api object which all calls will go through. If
+                an api object is not specified, api calls will revert to going
+                through the default api.
+        """
+        super(AdVideo, self).__init__(fbid=fbid, parent_id=parent_id, api=api)
+
+        self._file_info = file_info
+
     def remote_create(
         self,
-        file_info,
         batch=None,
         failure=None,
         params=None,
@@ -67,7 +80,7 @@ class AdVideo(AbstractCrudObject):
             )
         else:
             video_uploader = VideoUploader()
-            response = video_uploader.upload(self, file_info)
+            response = video_uploader.upload(self)
         self._set_data(response)
         return response
 
